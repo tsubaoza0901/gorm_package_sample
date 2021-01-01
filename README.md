@@ -1,0 +1,1 @@
+# gorm_package_sample
