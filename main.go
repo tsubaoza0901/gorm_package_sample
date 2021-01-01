@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -37,12 +36,6 @@ func InitDB() *gorm.DB {
 	return db
 }
 
-// InitMiddleware ...
-func InitMiddleware(e *echo.Echo) {
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-}
-
 // --------
 // router↓
 // --------
@@ -65,12 +58,10 @@ func (u *User) CreateUser(c echo.Context) error {
 	if err := c.Bind(u); err != nil {
 		return err
 	}
-
-	err := db.Create(&u).Error
+	err := db.Debug().Create(&u).Error
 	if err != nil {
 		return err
 	}
-
 	return c.JSON(http.StatusOK, u.ID)
 }
 
@@ -79,7 +70,7 @@ func (u *User) UpdateUser(c echo.Context) error {
 	if err := c.Bind(u); err != nil {
 		return err
 	}
-	err := db.Save(&u).Error
+	err := db.Debug().Save(&u).Error
 	if err != nil {
 		return err
 	}
@@ -91,7 +82,7 @@ func (u *User) DeleteUser(c echo.Context) error {
 	if err := c.Bind(u); err != nil {
 		return err
 	}
-	err := db.Delete(&u).Error
+	err := db.Debug().Delete(&u).Error
 	if err != nil {
 		return err
 	}
@@ -101,7 +92,7 @@ func (u *User) DeleteUser(c echo.Context) error {
 // GetUser ...
 func (u *User) GetUser(c echo.Context) error {
 	id := c.Param("id")
-	err := db.Where("id = ?", id).First(&u).Error
+	err := db.Debug().Where("id = ?", id).First(&u).Error
 	if err != nil {
 		return err
 	}
@@ -111,7 +102,7 @@ func (u *User) GetUser(c echo.Context) error {
 // GetUsers ...
 func (u *User) GetUsers(c echo.Context) error {
 	users := []*User{}
-	err := db.Find(&users).Error
+	err := db.Debug().Find(&users).Error
 	if err != nil {
 		return err
 	}
@@ -132,8 +123,6 @@ func main() {
 	defer sqlDB.Close()
 
 	e := echo.New()
-
-	InitMiddleware(e)
 
 	u := new(User)
 	InitRouting(e, u)
