@@ -15,10 +15,11 @@ import (
 
 // User ...
 type User struct {
-	ID                    uint                   `json:"id" gorm:"id"`
-	Name                  string                 `json:"name" gorm:"name"`
-	Age                   int                    `json:"age" gorm:"age"`
-	UserLanguageRelations []UserLanguageRelation `json:"languages" gorm:""`
+	ID        uint       `json:"id" gorm:"id"`
+	Name      string     `json:"name" gorm:"name"`
+	Age       int        `json:"age" gorm:"age"`
+	Languages []Language `json:"languages" gorm:"many2many:user_language_relations"`
+	// UserLanguageRelations []UserLanguageRelation `json:"user_language_relations" gorm:""`
 }
 
 // Language ...
@@ -41,7 +42,7 @@ var db *gorm.DB
 
 // InitDB ...
 func InitDB() *gorm.DB {
-	dsn := "root:root@tcp(db:3306)/zapsample?parseTime=True&loc=Local"
+	dsn := "root:root@tcp(db:3306)/gormsample?parseTime=True&loc=Local"
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal(err)
@@ -73,11 +74,7 @@ func (u *User) CreateUser(c echo.Context) error {
 	if err := c.Bind(&user); err != nil {
 		return err
 	}
-	err := db.Debug().Model(&user).Association("UserLanguageRelations").Error
-	if err != nil {
-		return err
-	}
-	err = db.Debug().Create(&user).Error
+	err := db.Debug().Create(&user).Error
 	if err != nil {
 		return err
 	}
@@ -86,13 +83,26 @@ func (u *User) CreateUser(c echo.Context) error {
 
 // UpdateUser ...
 func (u *User) UpdateUser(c echo.Context) error {
-	if err := c.Bind(u); err != nil {
+	user := User{}
+
+	if err := c.Bind(&user); err != nil {
 		return err
 	}
-	err := db.Debug().Save(&u).Error
+
+	tx := db.Begin()
+
+	// 更新時は対象ユーザーのリレーション情報を一度すべて削除して更新
+	err := tx.Debug().Where("user_id = ?", user.ID).Delete(&UserLanguageRelation{}).Error
 	if err != nil {
+		tx.Rollback()
 		return err
 	}
+	err = tx.Debug().Save(&user).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
 	return c.JSON(http.StatusOK, "Updated")
 }
 
@@ -111,7 +121,7 @@ func (u *User) DeleteUser(c echo.Context) error {
 // GetUser ...
 func (u *User) GetUser(c echo.Context) error {
 	id := c.Param("id")
-	err := db.Debug().Where("id = ?", id).First(&u).Error
+	err := db.Debug().Preload("Languages").Where("id = ?", id).First(&u).Error
 	if err != nil {
 		return err
 	}

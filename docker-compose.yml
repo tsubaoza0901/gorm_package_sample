@@ -12,7 +12,7 @@ services:
     container_name: gorm-sample-db
     restart: on-failure:5
     ports:
-      - '3306:3306'
+      - '3307:3306'
     environment:
       # 今回は勉強用のためセキュリティ無視で直書き
       MYSQL_ROOT_PASSWORD: 'root'
