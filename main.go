@@ -20,6 +20,18 @@ type User struct {
 	Age  int    `json:"age" gorm:"age"`
 }
 
+// Language ...
+type Language struct {
+	ID           uint   `json:"id" gorm:"id"`
+	LanguageName string `json:"language_name" gorm:"language_name"`
+}
+
+// UserLanguageRelation ...
+type UserLanguageRelation struct {
+	UserID     uint `json:"user_id" gorm:"user_id"`
+	LanguageID uint `json:"language_id" gorm:"language_id"`
+}
+
 // --------
 // infrastructure↓
 // --------
