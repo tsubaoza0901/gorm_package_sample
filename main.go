@@ -15,10 +15,10 @@ import (
 
 // User ...
 type User struct {
-	ID        uint       `json:"id" gorm:"id"`
-	Name      string     `json:"name" gorm:"name"`
-	Age       int        `json:"age" gorm:"age"`
-	Languages []Language `json:"languages" gorm:"many2many:user_language_relations"`
+	ID                    uint                   `json:"id" gorm:"id"`
+	Name                  string                 `json:"name" gorm:"name"`
+	Age                   int                    `json:"age" gorm:"age"`
+	UserLanguageRelations []UserLanguageRelation `json:"languages" gorm:""`
 }
 
 // Language ...
@@ -73,7 +73,7 @@ func (u *User) CreateUser(c echo.Context) error {
 	if err := c.Bind(&user); err != nil {
 		return err
 	}
-	err := db.Debug().SetupJoinTable(&user, "Languages", &UserLanguageRelation{})
+	err := db.Debug().Model(&user).Association("UserLanguageRelations").Error
 	if err != nil {
 		return err
 	}
