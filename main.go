@@ -15,9 +15,10 @@ import (
 
 // User ...
 type User struct {
-	ID   uint   `json:"id" gorm:"id"`
-	Name string `json:"name" gorm:"name"`
-	Age  int    `json:"age" gorm:"age"`
+	ID        uint       `json:"id" gorm:"id"`
+	Name      string     `json:"name" gorm:"name"`
+	Age       int        `json:"age" gorm:"age"`
+	Languages []Language `json:"languages" gorm:"many2many:user_language_relations"`
 }
 
 // Language ...
@@ -67,14 +68,20 @@ func InitRouting(e *echo.Echo, u *User) {
 
 // CreateUser ...
 func (u *User) CreateUser(c echo.Context) error {
-	if err := c.Bind(u); err != nil {
+	user := User{}
+
+	if err := c.Bind(&user); err != nil {
 		return err
 	}
-	err := db.Debug().Create(&u).Error
+	err := db.Debug().SetupJoinTable(&user, "Languages", &UserLanguageRelation{})
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, u.ID)
+	err = db.Debug().Create(&user).Error
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, user.ID)
 }
 
 // UpdateUser ...
