@@ -15,11 +15,15 @@ import (
 
 // User ...
 type User struct {
-	ID        uint       `json:"id" gorm:"id"`
-	Name      string     `json:"name" gorm:"name"`
-	Age       int        `json:"age" gorm:"age"`
-	Languages []Language `json:"languages" gorm:"many2many:user_language_relations"`
+	ID        uint     `json:"id" gorm:"id"`
+	Name      string   `json:"name" gorm:"name"`
+	Age       int      `json:"age" gorm:"age"`
+	CompanyID uint     `json:"company_id" gorm:"company_id"`
+	Company   *Company `json:"company" gorm:""`
+	// Role Role   `json:"role" gorm:"role"`
+	// Languages []Language `json:"languages" gorm:"many2many:user_language_relations"`
 	// UserLanguageRelations []UserLanguageRelation `json:"user_language_relations" gorm:""`
+	// CreditCards []CreditCard `json:"credit_cards" gorm:""`
 }
 
 // Language ...
@@ -32,6 +36,26 @@ type Language struct {
 type UserLanguageRelation struct {
 	UserID     uint `json:"user_id" gorm:"user_id"`
 	LanguageID uint `json:"language_id" gorm:"language_id"`
+}
+
+// CreditCard ...
+type CreditCard struct {
+	ID         uint   `json:"id" gorm:"id"`
+	CardNumber string `json:"card_number" gorm:"card_number"`
+	UserID     int    `json:"user_id" gorm:"user_id"`
+}
+
+// Role ...
+type Role struct {
+	ID       uint   `json:"id" gorm:"id"`
+	RoleName string `json:"role_name" gorm:"role_name"`
+	UserID   int    `json:"user_id" gorm:"user_id"`
+}
+
+// Company ...
+type Company struct {
+	ID   uint   `json:"id" gorm:"id"`
+	Name string `json:"name" gorm:"name"`
 }
 
 // --------
@@ -120,18 +144,22 @@ func (u *User) DeleteUser(c echo.Context) error {
 
 // GetUser ...
 func (u *User) GetUser(c echo.Context) error {
+	user := User{}
+
 	id := c.Param("id")
-	err := db.Debug().Preload("Languages").Where("id = ?", id).First(&u).Error
+
+	err := db.Debug().Preload("Company").Where("id = ?", id).First(&user).Error
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, u)
+	return c.JSON(http.StatusOK, user)
 }
 
 // GetUsers ...
 func (u *User) GetUsers(c echo.Context) error {
 	users := []*User{}
-	err := db.Debug().Find(&users).Error
+
+	err := db.Debug().Preload("Company").Find(&users).Error
 	if err != nil {
 		return err
 	}
