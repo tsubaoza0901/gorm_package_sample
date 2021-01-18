@@ -15,15 +15,20 @@ import (
 
 // User ...
 type User struct {
-	ID        uint     `json:"id" gorm:"id"`
-	Name      string   `json:"name" gorm:"name"`
-	Age       int      `json:"age" gorm:"age"`
-	CompanyID uint     `json:"company_id" gorm:"company_id"`
-	Company   *Company `json:"company" gorm:""`
-	// Role Role   `json:"role" gorm:"role"`
+	ID                    uint                   `json:"id" gorm:"id"`
+	Name                  string                 `json:"name" gorm:"name"`
+	Age                   int                    `json:"age" gorm:"age"`
+	UserLanguageRelations []UserLanguageRelation `json:"user_language_relations" gorm:""`
 	// Languages []Language `json:"languages" gorm:"many2many:user_language_relations"`
-	// UserLanguageRelations []UserLanguageRelation `json:"user_language_relations" gorm:""`
+	// CompanyID uint     `json:"company_id" gorm:"company_id"`
+	// Company   *Company `json:"company" gorm:""`
+	// Role Role   `json:"role" gorm:"role"`
 	// CreditCards []CreditCard `json:"credit_cards" gorm:""`
+}
+
+// UserSearchQuery ...
+type UserSearchQuery struct {
+	LanguageIDs []uint `json:"language_ids" query:"language_ids"`
 }
 
 // Language ...
@@ -148,7 +153,7 @@ func (u *User) GetUser(c echo.Context) error {
 
 	id := c.Param("id")
 
-	err := db.Debug().Preload("Company").Where("id = ?", id).First(&user).Error
+	err := db.Debug().Preload("languages").Where("id = ?", id).First(&user).Error
 	if err != nil {
 		return err
 	}
@@ -157,9 +162,16 @@ func (u *User) GetUser(c echo.Context) error {
 
 // GetUsers ...
 func (u *User) GetUsers(c echo.Context) error {
-	users := []*User{}
+	userSearchQuery := UserSearchQuery{}
+	if err := c.Bind(&userSearchQuery); err != nil {
+		return err
+	}
 
-	err := db.Debug().Preload("Company").Find(&users).Error
+	users := []*User{}
+	err := db.Debug().
+		Preload("UserLanguageRelations").
+		Where("id in (?)", db.Table("user_language_relations").Select("distinct(user_id)").Where("language_id IN (?)", userSearchQuery.LanguageIDs)).
+		Find(&users).Error
 	if err != nil {
 		return err
 	}
